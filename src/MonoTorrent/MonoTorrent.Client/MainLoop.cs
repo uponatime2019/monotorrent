@@ -70,7 +70,7 @@ namespace MonoTorrent.Client
         void Loop ()
         {
             SetSynchronizationContext (this);
-            using (ExecutionContext.SuppressFlow ())
+            //using (ExecutionContext.SuppressFlow ())
                 while (true) {
                     QueuedTask? task = null;
 

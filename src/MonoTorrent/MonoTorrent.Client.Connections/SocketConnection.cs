@@ -199,8 +199,8 @@ namespace MonoTorrent.Client.Connections
             args.UserToken = ReceiveTcs;
 
             AsyncFlowControl? control = null;
-            if (!ExecutionContext.IsFlowSuppressed ())
-                control = ExecutionContext.SuppressFlow ();
+            //if (!ExecutionContext.IsFlowSuppressed ())
+            //    control = ExecutionContext.SuppressFlow ();
 
             try {
                 if (!Socket.ReceiveAsync (args))
@@ -229,8 +229,8 @@ namespace MonoTorrent.Client.Connections
             args.UserToken = SendTcs;
 
             AsyncFlowControl? control = null;
-            if (!ExecutionContext.IsFlowSuppressed ())
-                control = ExecutionContext.SuppressFlow ();
+            //if (!ExecutionContext.IsFlowSuppressed ())
+            //    control = ExecutionContext.SuppressFlow ();
 
             try {
                 if (!Socket.SendAsync (args))
