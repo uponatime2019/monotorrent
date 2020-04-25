@@ -73,6 +73,18 @@ namespace MonoTorrent.Streaming
             return new LocalStream (Manager, file, Picker);
         }
 
+        public Stream CreateStreamOnly (TorrentFile file)
+        {
+            if (file == null)
+                throw new ArgumentNullException (nameof (file));
+            if (!Manager.Torrent.Files.Contains (file))
+                throw new ArgumentException ("The TorrentFile is not from this TorrentManager", nameof (file));
+
+            Picker = (StreamingPiecePicker)Manager.MyPiecePicker;
+            Picker.SeekToPosition (file, 0);
+            return new LocalStream (Manager, file, Picker);
+        }
+
         /// <summary>
         /// Creates a <see cref="Stream"/> which can be used to access the given <see cref="TorrentFile"/>
         /// while it is downloading. This stream is seekable and readable.

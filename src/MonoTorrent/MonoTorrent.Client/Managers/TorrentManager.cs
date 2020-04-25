@@ -29,6 +29,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -431,9 +432,12 @@ namespace MonoTorrent.Client
 
         internal void ChangePicker (PiecePicker picker)
         {
+            MyPiecePicker = picker;
             Check.Picker (picker);
             PieceManager.ChangePicker (new IgnoringPicker (UnhashedPieces, picker), Bitfield, Torrent);
         }
+
+        public PiecePicker MyPiecePicker { get; set; }
 
         /// <summary>
         /// Changes the active piece picker. This can be called when the manager is running, or when it is stopped.
@@ -442,9 +446,12 @@ namespace MonoTorrent.Client
         /// <returns></returns>
         public async Task ChangePickerAsync (PiecePicker picker)
         {
+            Debug.WriteLine ($"Change Picker to {MyCurrentPiecePicker}");
             await ClientEngine.MainLoop;
             ChangePicker (picker);
         }
+
+        public string MyCurrentPiecePicker => MyPiecePicker == null ? "PIECE_PICKER_NOPPPEEEE" : MyPiecePicker.GetType ().ToString ();
 
         public void Dispose ()
         {

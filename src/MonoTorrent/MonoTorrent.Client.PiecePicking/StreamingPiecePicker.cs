@@ -38,7 +38,7 @@ namespace MonoTorrent.Client.PiecePicking
     /// sufficient data has been buffered, then it moves to a standard 'rarest first'
     /// mode.
     /// </summary>
-    class StreamingPiecePicker : PiecePicker
+    public class StreamingPiecePicker : PiecePicker
     {
         bool CancelPendingRequests { get; set; }
 
@@ -65,6 +65,11 @@ namespace MonoTorrent.Client.PiecePicking
             : base (new PriorityPicker (picker))
         {
             LowPriorityPicker = new PriorityPicker (new RarestFirstPicker (new RandomisedPicker (picker)));
+        }
+
+        public void StartStream (TorrentFile file)
+        {
+            ReadToPosition (file, 0);
         }
 
         public override void Initialise (BitField bitfield, ITorrentData torrentData, IEnumerable<Piece> requests)
