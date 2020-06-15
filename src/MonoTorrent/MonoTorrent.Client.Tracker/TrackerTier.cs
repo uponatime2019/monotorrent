@@ -140,7 +140,7 @@ namespace MonoTorrent.Client.Tracker
 
         internal TrackerTier (ITracker tracker)
         {
-            Trackers = Array.AsReadOnly (new [] { tracker });
+            Trackers = new [] { tracker }.ToReadonly ();
         }
 
         internal async ReusableTask AnnounceAsync (AnnounceParameters args, CancellationToken token)

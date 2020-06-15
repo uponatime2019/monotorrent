@@ -63,11 +63,11 @@ namespace MonoTorrent.Client.PieceWriters
 
         public int Count => Streams.Count;
 
-        Func<ITorrentFileInfo, FileAccess, ITorrentFileStream> StreamCreator { get; }
+        Func<ITorrentFileInfo, FileAccess, ReusableTask<ITorrentFileStream>> StreamCreator { get; }
         Dictionary<ITorrentFileInfo, ITorrentFileStream> Streams { get; }
         List<ITorrentFileInfo> UsageOrder { get; }
 
-        internal FileStreamBuffer (Func<ITorrentFileInfo, FileAccess, ITorrentFileStream> streamCreator, int maxStreams)
+        internal FileStreamBuffer (Func<ITorrentFileInfo, FileAccess, ReusableTask<ITorrentFileStream>> streamCreator, int maxStreams)
         {
             StreamCreator = streamCreator;
             MaxStreams = maxStreams;
@@ -125,13 +125,13 @@ namespace MonoTorrent.Client.PieceWriters
                         Directory.CreateDirectory (Path.GetDirectoryName (file.FullPath));
                     NtfsSparseFile.CreateSparse (file.FullPath, file.Length);
                 }
-                s = StreamCreator(file, access);
+                s = await StreamCreator(file, access);
 
                 // Ensure that we truncate existing files which are too large
                 if (s.Length > file.Length) {
                     if (!s.CanWrite) {
                         s.Dispose ();
-                        s = StreamCreator(file, FileAccess.ReadWrite);
+                        s = await StreamCreator(file, FileAccess.ReadWrite);
                     }
                     await s.SetLengthAsync (file.Length);
                 }

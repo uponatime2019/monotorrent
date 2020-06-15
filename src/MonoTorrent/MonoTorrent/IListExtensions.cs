@@ -29,6 +29,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace MonoTorrent
 {
@@ -67,5 +69,11 @@ namespace MonoTorrent
             }
             return ~min;
         }
+
+        public static IList<T> ToReadonly<T> (this IEnumerable<T> enumerable)
+            => enumerable.ToArray ().ToReadonly ();
+
+        public static IList<T> ToReadonly<T> (this IList<T> list)
+            => new ReadOnlyCollection<T> (list);
     }
 }
