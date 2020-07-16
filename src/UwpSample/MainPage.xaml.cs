@@ -8,6 +8,7 @@ using SampleClient;
 
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Storage;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -34,7 +35,7 @@ namespace UwpSample
         async void LoadAsync ()
         {
             var stressTest = new StressTest ();
-            await stressTest.RunAsync ();
+            await stressTest.RunAsync (ApplicationData.Current.LocalFolder.Path);
         }
     }
 }

@@ -55,10 +55,14 @@ namespace SampleClient
     class StressTest
     {
         const int DataSize = 100 * 1024 * 1024 - 1024;
-        static string DataDir = Path.GetFullPath ("data_dir");
+        static string DataDir;
 
-        public async Task RunAsync ()
+        public Task RunAsync ()
+            => RunAsync (Path.GetFullPath ("data_dir"));
+
+        public async Task RunAsync (string savePath)
         {
+            DataDir = savePath;
             //LoggerFactory.Creator = className => new TextLogger (Console.Out, className);
 
             var seederWriter = new MemoryWriter (new NullWriter (), DataSize);
@@ -67,14 +71,13 @@ namespace SampleClient
                 new EngineSettings {
                     AllowedEncryption = EncryptionTypes.PlainText,
                     ListenPort = port++
-                },
-                seederWriter
+                }//, seederWriter
             );
 
             var downloaders = Enumerable.Range (port, 16).Select (p => {
                 return new ClientEngine (
-                    new EngineSettings { ListenPort = p, AllowedEncryption = EncryptionTypes.PlainText },
-                    new MemoryWriter (new NullWriter (), DataSize)
+                    new EngineSettings { ListenPort = p, AllowedEncryption = EncryptionTypes.PlainText }
+                    //, new MemoryWriter (new NullWriter (), DataSize)
                 );
             }).ToArray ();
 
@@ -103,15 +106,6 @@ namespace SampleClient
 
             // Set up the seeder
             await seeder.Register (new TorrentManager (Torrent.Load (metadata), DataDir, new TorrentSettings { UploadSlots = 20 }));
-            using (var fileStream = File.OpenRead (Path.Combine (DataDir, "file.data"))) {
-                while (fileStream.Position < fileStream.Length) {
-                    var dataRead = new byte[16 * 1024];
-                    int offset = (int)fileStream.Position;
-                    int read = fileStream.Read (dataRead, 0, dataRead.Length);
-                    await seederWriter.WriteAsync (seeder.Torrents[0].Files[0], offset, dataRead, 0, read);
-                }
-            }
-
             await seeder.StartAllAsync ();
 
             List<Task> tasks = new List<Task> ();
@@ -138,7 +132,7 @@ namespace SampleClient
                     dataUp += engine.Torrents[0].Monitor.DataBytesUploaded + engine.Torrents[0].Monitor.ProtocolBytesUploaded;
                     totalConnections += engine.ConnectionManager.OpenConnections;
                 }
-                Console.Clear ();
+                //Console.Clear ();
                 Console.WriteLine ($"Speed Down:        {downTotal / 1024 / 1024}MB.");
                 Console.WriteLine ($"Speed Up:          {upTotal / 1024 / 1024}MB.");
                 Console.WriteLine ($"Data Down:          {dataDown / 1024 / 1024}MB.");

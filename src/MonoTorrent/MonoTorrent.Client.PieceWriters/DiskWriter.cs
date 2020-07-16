@@ -41,11 +41,13 @@ namespace MonoTorrent.Client.PieceWriters
         static readonly int DefaultMaxOpenFiles = 196;
 #if UWP
         static readonly Func<ITorrentFileInfo, FileAccess, ReusableTask<ITorrentFileStream>> DefaultStreamCreator = async (file, access) => {
-            var openedFile = await Windows.Storage.StorageFile.GetFileFromPathAsync (file.FullPath);
-            var streamTask = access.HasFlag (FileAccess.Write) ? openedFile.OpenStreamForWriteAsync () : openedFile.OpenStreamForReadAsync ();
-            var stream = await streamTask;
-            // FIXME: return new TorrentFileStream (stream);
-            throw new NotImplementedException ();
+            var containingDirectory = Path.GetDirectoryName (file.FullPath);
+            Directory.CreateDirectory (containingDirectory);
+
+            var storageFolder = await Windows.Storage.StorageFolder.GetFolderFromPathAsync (containingDirectory);
+            var storageFile = await storageFolder.CreateFileAsync (Path.GetFileName (file.FullPath), Windows.Storage.CreationCollisionOption.OpenIfExists);
+            var streamTask = access.HasFlag (FileAccess.Write) ? storageFile.OpenStreamForWriteAsync () : storageFile.OpenStreamForReadAsync ();
+            return new TorrentFileStream (await streamTask);
         };
 #else
         static readonly Func<ITorrentFileInfo, FileAccess, ReusableTask<ITorrentFileStream>> DefaultStreamCreator =

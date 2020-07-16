@@ -33,41 +33,53 @@ using ReusableTasks;
 
 namespace MonoTorrent.Client
 {
-    class TorrentFileStream : FileStream, ITorrentFileStream
+    class TorrentFileStream : ITorrentFileStream
     {
         bool disposed;
         bool rented;
+        Stream Stream { get; }
 
         public TorrentFileStream (string path, FileAccess access)
-            : base (path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 1, FileOptions.Asynchronous | FileOptions.RandomAccess)
+            : this (new FileStream (path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite, 1, FileOptions.RandomAccess))
         {
         }
 
-        protected override void Dispose (bool disposing)
+        public TorrentFileStream (Stream stream)
+        {
+            Stream = stream;
+        }
+
+        public void Dispose ()
         {
             disposed = true;
-            base.Dispose (disposing);
+            Stream.Dispose ();
         }
 
         bool ITorrentFileStream.Disposed => disposed;
 
         bool ITorrentFileStream.Rented => rented;
 
+        public bool CanWrite => Stream.CanWrite;
+
+        public long Length => Stream.Length;
+
+        public long Position => Stream.Position;
+
         async ReusableTask ITorrentFileStream.FlushAsync ()
         {
-            await FlushAsync ();
+            await Stream.FlushAsync ();
         }
 
         async ReusableTask<int> ITorrentFileStream.ReadAsync (byte[] buffer, int offset, int count)
         {
             if (!rented)
                 throw new InvalidOperationException ("Cannot read from the stream without renting it");
-            return await ReadAsync (buffer, offset, count);
+            return await Stream.ReadAsync (buffer, offset, count);
         }
 
         ReusableTask ITorrentFileStream.SeekAsync (long position)
         {
-            Seek (position, SeekOrigin.Begin);
+            Stream.Seek (position, SeekOrigin.Begin);
             return ReusableTask.CompletedTask;
         }
 
@@ -76,7 +88,7 @@ namespace MonoTorrent.Client
             if (!rented)
                 throw new InvalidOperationException ("Cannot set the stream length without renting it");
 
-            SetLength (length);
+            Stream.SetLength (length);
             return ReusableTask.CompletedTask;
         }
 
@@ -84,7 +96,7 @@ namespace MonoTorrent.Client
         {
             if (!rented)
                 throw new InvalidOperationException ("Cannot write to the stream without renting it");
-            await WriteAsync (buffer, offset, count);
+            await Stream.WriteAsync (buffer, offset, count);
         }
 
         void ITorrentFileStream.Rent ()
