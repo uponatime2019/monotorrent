@@ -140,6 +140,7 @@ namespace MonoTorrent.Client.PiecePicking
 
             var lowPriorityEnd = Math.Min (pieceCount - 1, HighPriorityPieceIndex + LowPriorityCount - 1);
             AddRequests (peer, allPeers, HighPriorityPieceIndex, lowPriorityEnd, 1);
+            AddRequests (peer, allPeers, 0, pieceCount - 1, 1);
         }
 
         void AddRequests (IPeerWithMessaging peer, IReadOnlyList<IPeerWithMessaging> allPeers, int startPieceIndex, int endPieceIndex, int maxDuplicates, int? preferredMaxRequests = null)
@@ -185,19 +186,9 @@ namespace MonoTorrent.Client.PiecePicking
                 MutableBitField filtered = null;
                 while (peer.AmRequestingPiecesCount < maxRequests) {
                     filtered ??= GenerateAlreadyHaves ().Not ().And (peer.BitField);
-                    IList<BlockInfo> request = PriorityPick (peer, filtered, allPeers, preferredRequestAmount, 0, TorrentData.PieceCount () - 1);
+                    IList<BlockInfo> request = PriorityPick (peer, filtered, allPeers, preferredRequestAmount, startPieceIndex, endPieceIndex);
                     if (request != null && request.Count > 0)
                         peer.EnqueueRequests (request);
-                    else
-                        break;
-                }
-            }
-
-            if (!peer.IsChoking && peer.AmRequestingPiecesCount == 0) {
-                while (peer.AmRequestingPiecesCount < maxRequests) {
-                    BlockInfo? request = Picker.ContinueAnyExistingRequest (peer, HighPriorityPieceIndex, TorrentData.PieceCount () - 1, 1);
-                    if (request != null)
-                        peer.EnqueueRequest (request.Value);
                     else
                         break;
                 }
@@ -234,18 +225,15 @@ namespace MonoTorrent.Client.PiecePicking
                     return bundle;
             }
 
-            if (endIndex < HighPriorityPieceIndex)
-                return null;
-
             var lowPriorityEndIndex = Math.Min (HighPriorityPieceIndex + LowPriorityCount, endIndex);
             if ((bundle = LowPriorityPicker.PickPiece (peer, available, otherPeers, count, HighPriorityPieceIndex, lowPriorityEndIndex)) != null)
                 return bundle;
 
             // If we're downloading from the 'not important at all' section, queue up at most 2.
-            if (peer.AmRequestingPiecesCount > 2)
-                return null;
+            if (peer.AmRequestingPiecesCount < 2)
+                return LowPriorityPicker.PickPiece (peer, available, otherPeers, count, startIndex, endIndex);
 
-            return LowPriorityPicker.PickPiece (peer, available, otherPeers, count, HighPriorityPieceIndex, endIndex);
+            return null;
         }
 
         /// <summary>
