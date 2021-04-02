@@ -121,7 +121,7 @@ namespace MonoTorrent.Client.PiecePicking
             foreach (var supportsFastPeer in new[] { true, false }) {
                 for (int i = 0; i < 4; i++) {
                     foreach (var peer in fastestPeers.Where (p => p.SupportsFastPeer == supportsFastPeer)) {
-                        AddRequests (peer, peers, HighPriorityPieceIndex, Math.Min (HighPriorityPieceIndex + 1, bitfield.Length - 1), 2, (i + 1) * 2);
+                        AddRequests (peer, peers, HighPriorityPieceIndex, Math.Min (HighPriorityPieceIndex + 1, bitfield.Length - 1), 2, preferredMaxRequests : (i + 1) * 2);
                     }
                 }
             }
@@ -136,20 +136,20 @@ namespace MonoTorrent.Client.PiecePicking
             // The first two pieces in the high priority set should be requested multiple times to ensure fast delivery
             var pieceCount = TorrentData.PieceCount ();
             for (int i = HighPriorityPieceIndex; i < pieceCount && i <= HighPriorityPieceIndex + 1; i++)
-                AddRequests (peer, allPeers, HighPriorityPieceIndex, HighPriorityPieceIndex, 2);
+                AddRequests (peer, allPeers, HighPriorityPieceIndex, HighPriorityPieceIndex, 2, preferredMaxRequests: 4);
 
             var lowPriorityEnd = Math.Min (pieceCount - 1, HighPriorityPieceIndex + LowPriorityCount - 1);
-            AddRequests (peer, allPeers, HighPriorityPieceIndex, lowPriorityEnd, 1);
-            AddRequests (peer, allPeers, 0, pieceCount - 1, 1);
+            AddRequests (peer, allPeers, HighPriorityPieceIndex, lowPriorityEnd, 1, preferredMaxRequests: 3);
+            AddRequests (peer, allPeers, 0, pieceCount - 1, 1, preferredMaxRequests: 2);
         }
 
-        void AddRequests (IPeerWithMessaging peer, IReadOnlyList<IPeerWithMessaging> allPeers, int startPieceIndex, int endPieceIndex, int maxDuplicates, int? preferredMaxRequests = null)
+        void AddRequests (IPeerWithMessaging peer, IReadOnlyList<IPeerWithMessaging> allPeers, int startPieceIndex, int endPieceIndex, int maxDuplicates, int preferredMaxRequests)
         {
             if (!peer.CanRequestMorePieces)
                 return;
 
             int preferredRequestAmount = peer.PreferredRequestAmount (TorrentData.PieceLength);
-            var maxRequests = Math.Min (preferredMaxRequests ?? 3, peer.MaxPendingRequests);
+            var maxRequests = Math.Min (preferredMaxRequests, peer.MaxPendingRequests);
 
             if (peer.AmRequestingPiecesCount >= maxRequests)
                 return;
