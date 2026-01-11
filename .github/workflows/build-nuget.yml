@@ -35,7 +35,7 @@ jobs:
         run: |
           $nupkg = Get-ChildItem -Recurse -Filter "MonoTorrent_LatestFromOrigin.*.nupkg" | Where-Object { $_.Name -notlike "*.snupkg" } | Select-Object -First 1
           if ($nupkg) {
-            dotnet nuget push $nupkg.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            dotnet nuget push $nupkg.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
           } else {
             Write-Error "MonoTorrent_LatestFromOrigin nupkg file not found"
             exit 1
