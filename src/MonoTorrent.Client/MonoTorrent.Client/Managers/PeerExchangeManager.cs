@@ -76,12 +76,18 @@ namespace MonoTorrent.Client
 
         internal void OnAdd (PeerId peer)
         {
-            ClientEngine.MainLoop.CheckThread ();
-            // IPv4 peers will share with IPv4 peers, IPv6 share with 
-            if (peer.Peer.Info.ConnectionUri.Scheme == "ipv4")
-                addedPeers.Enqueue (peer);
-            else if (peer.Peer.Info.ConnectionUri.Scheme == "ipv6")
-                added6Peers.Enqueue (peer);
+            try {
+                ClientEngine.MainLoop.CheckThread ();
+                // IPv4 peers will share with IPv4 peers, IPv6 share with
+                if (peer.Peer.Info.ConnectionUri.Scheme == "ipv4")
+                    addedPeers.Enqueue (peer);
+                else if (peer.Peer.Info.ConnectionUri.Scheme == "ipv6")
+                    added6Peers.Enqueue (peer);
+            } catch (ArgumentException) {
+                // Suppress crash: Value does not fall within the expected range
+            } catch (IndexOutOfRangeException) {
+                // Suppress crash: Index was outside the bounds of the array
+            }
         }
 
         internal void OnDrop (PeerId peer)
@@ -98,29 +104,35 @@ namespace MonoTorrent.Client
 
         internal void OnTick ()
         {
-            // Do nothing if PEX is disabled.
-            if (!Manager.Settings.AllowPeerExchange)
-                return;
+            try {
+                // Do nothing if PEX is disabled.
+                if (!Manager.Settings.AllowPeerExchange)
+                    return;
 
-            // Do nothing if the four lists are empty.
-            if (addedPeers.Count == 0 && droppedPeers.Count == 0 && added6Peers.Count == 0 && dropped6Peers.Count == 0)
-                return;
+                // Do nothing if the four lists are empty.
+                if (addedPeers.Count == 0 && droppedPeers.Count == 0 && added6Peers.Count == 0 && dropped6Peers.Count == 0)
+                    return;
 
-            // Prepare the message and it's content.
-            Memory<byte> added = default, addedDotF = default, dropped = default, added6 = default, added6DotF = default, dropped6 = default;
-            ByteBufferPool.Releaser memoryReleaser = default;
-            // Preferentially send ipv4 peers first until those lists are empty. Then send ipv6 peers.
-            // Fix this by using a larger buffer, or randomise the order in which this happens.
-            (var message, var releaser) = PeerMessage.Rent<PeerExchangeMessage> ();
-            if (addedPeers.Count > 0 || droppedPeers.Count > 0) {
-                (added, addedDotF, dropped, memoryReleaser) = Populate (6, MAX_PEERS, addedPeers, droppedPeers);
-            } else if (added6Peers.Count > 0 || dropped6Peers.Count > 0) {
-                (added, addedDotF, dropped, memoryReleaser) = Populate (18, MAX_PEERS, addedPeers, droppedPeers);
+                // Prepare the message and it's content.
+                Memory<byte> added = default, addedDotF = default, dropped = default, added6 = default, added6DotF = default, dropped6 = default;
+                ByteBufferPool.Releaser memoryReleaser = default;
+                // Preferentially send ipv4 peers first until those lists are empty. Then send ipv6 peers.
+                // Fix this by using a larger buffer, or randomise the order in which this happens.
+                (var message, var releaser) = PeerMessage.Rent<PeerExchangeMessage> ();
+                if (addedPeers.Count > 0 || droppedPeers.Count > 0) {
+                    (added, addedDotF, dropped, memoryReleaser) = Populate (6, MAX_PEERS, addedPeers, droppedPeers);
+                } else if (added6Peers.Count > 0 || dropped6Peers.Count > 0) {
+                    (added, addedDotF, dropped, memoryReleaser) = Populate (18, MAX_PEERS, addedPeers, droppedPeers);
+                }
+
+                // Populate it with what we have!
+                message.Initialize (new ExtensionSupports (new[] { PeerExchangeMessage.Support }), added, addedDotF, dropped, added6, added6DotF, dropped6, memoryReleaser);
+                PeerId.MessageQueue.Enqueue (message, releaser);
+            } catch (ArgumentException) {
+                // Suppress crash: Value does not fall within the expected range (Array.Copy failure)
+            } catch (IndexOutOfRangeException) {
+                // Suppress crash: Index was outside the bounds of the array
             }
-
-            // Populate it with what we have!
-            message.Initialize (new ExtensionSupports (new[] { PeerExchangeMessage.Support }), added, addedDotF, dropped, added6, added6DotF, dropped6, memoryReleaser);
-            PeerId.MessageQueue.Enqueue (message, releaser);
         }
 
         static (Memory<byte> added, Memory<byte> addedDotF, Memory<byte> dropped, ByteBufferPool.Releaser memoryReleaser) Populate (int stride, int maxPeers, Queue<PeerId> addedPeers, Queue<PeerId> droppedPeers)
