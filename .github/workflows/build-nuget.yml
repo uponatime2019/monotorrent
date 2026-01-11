@@ -23,14 +23,6 @@ jobs:
       - name: Restore and Build NuGet packages
         run: msbuild src/MonoTorrent.sln /nologo /restore /t:Pack /p:Configuration=Release
 
-      - name: Find all .nupkg files
-        id: find-packages
-        shell: pwsh
-        run: |
-          $files = Get-ChildItem -Recurse -Filter *.nupkg | Where-Object { !$_.Name.Contains('.symbols.') }
-          $packages = ($files | ForEach-Object { $_.FullName }) -join "`n"
-          echo "packages=$packages" >> $env:GITHUB_OUTPUT
-
       - name: Get version from version.txt
         id: get-version
         shell: pwsh
