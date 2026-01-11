@@ -2,9 +2,6 @@
 <Project>
 
   <PropertyGroup>
-    <MonoTorrentReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\alpha.txt')">-alpha.unstable</MonoTorrentReleaseSuffix>
-    <MonoTorrentReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\beta.txt')">-beta</MonoTorrentReleaseSuffix>
-
     <Nullable Condition="$(TargetFramework) == 'netstandard2.0' Or $(TargetFramework) == 'net472'">annotations</Nullable>
     <Nullable Condition="$(TargetFramework) != 'netstandard2.0' And $(TargetFramework) != 'net472'">enable</Nullable>
   </PropertyGroup>
@@ -56,16 +53,26 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Read version from version.txt directly -->
+  <Target Name="ReadVersionFromFile" BeforeTargets="GetAssemblyVersion;CoreBuild">
+    <ReadLinesFromFile File="$(GitCommitsRelativeTo)version.txt" Lines="1">
+      <Output TaskParameter="Lines" PropertyName="MonoTorrentFileVersionFromTxt" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <MonoTorrentFileVersionFromTxt>$([System.Text.RegularExpressions.Regex]::Match($(MonoTorrentFileVersionFromTxt), '^(\d+\.\d+\.\d+)').Groups[1].Value)</MonoTorrentFileVersionFromTxt>
+      <MonoTorrentFileVersion Condition="'$(MonoTorrentFileVersionFromTxt)' != ''">$(MonoTorrentFileVersionFromTxt)</MonoTorrentFileVersion>
+      <MonoTorrentFileVersion Condition="'$(MonoTorrentFileVersionFromTxt)' == ''">0.0.1</MonoTorrentFileVersion>
+      <MonoTorrentInformationalVersion>$(MonoTorrentFileVersion)</MonoTorrentInformationalVersion>
+    </PropertyGroup>
+  </Target>
+
   <!-- Restore success is in the .nuget.g.props file generated as part of msbuild /t:Restore. We do not -->
   <!-- want this logic to run if restore hasn't been executed as the 'GitVersion' target won't exist.   -->
-  <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' == 'true' And '$(Configuration)' == 'Release' And '$(GitInfoVersion)' != ''" DependsOnTargets="GitVersion">
+  <Target Name="SetAssemblyVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(RestoreSuccess)' == 'true' And '$(Configuration)' == 'Release' And '$(GitInfoVersion)' != ''" DependsOnTargets="ReadVersionFromFile">
     <PropertyGroup>
-      <MonoTorrentFileVersion Condition="$(MonoTorrentReleaseSuffix) == ''">$(GitSemVerMajor).$(GitSemVerMinor).$(GitSemVerPatch)</MonoTorrentFileVersion>
-      <MonoTorrentFileVersion Condition="$(MonoTorrentReleaseSuffix) != ''">$(GitBaseVersion)</MonoTorrentFileVersion>
-
-      <PaddedSemVerPatch>$([System.String]::Format('{0:0000}', $([System.Int32]::Parse('$(GitSemVerPatch)'))))</PaddedSemVerPatch>
-      <MonoTorrentReleaseSuffix Condition="$(MonoTorrentReleaseSuffix) != ''">$(MonoTorrentReleaseSuffix).rev$(PaddedSemVerPatch)</MonoTorrentReleaseSuffix>
-      <MonoTorrentInformationalVersion>$(MonoTorrentFileVersion)-$(GitBranch)+$(GitCommit)</MonoTorrentInformationalVersion>
+      <MonoTorrentReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\alpha.txt')">-alpha.unstable</MonoTorrentReleaseSuffix>
+      <MonoTorrentReleaseSuffix Condition="Exists ('$(GitCommitsRelativeTo)\beta.txt')">-beta</MonoTorrentReleaseSuffix>
+      <MonoTorrentInformationalVersion>$(MonoTorrentFileVersion)$(MonoTorrentReleaseSuffix)</MonoTorrentInformationalVersion>
 
       <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(MonoTorrentABIVersion)</AssemblyVersion>
       <FileVersion Condition="'$(FileVersion)' == ''">$(MonoTorrentFileVersion)</FileVersion>
