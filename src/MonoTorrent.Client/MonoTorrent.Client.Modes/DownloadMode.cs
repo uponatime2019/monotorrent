@@ -90,6 +90,10 @@ namespace MonoTorrent.Client.Modes
         internal async Task UpdateSeedingDownloadingState ()
         {
             //If download is fully complete, set state to 'Seeding' and send an announce to the tracker.
+            if (Manager.Bitfield.AllTrue) {
+                await Manager.RefreshAllFilesCorrectLengthAsync ();
+            }
+
             if (Manager.Complete && state == TorrentState.Downloading) {
                 state = TorrentState.Seeding;
                 await Task.WhenAll (
