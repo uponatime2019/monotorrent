@@ -25,6 +25,16 @@
     <UseValueStopWatch>true</UseValueStopWatch>
   </PropertyGroup>
 
+    <PropertyGroup>
+    <PackageReadmeFile>README_.md</PackageReadmeFile>
+  </PropertyGroup>
+
+    <ItemGroup>
+    <!-- Include the README in the package -->
+    <None Include="README_.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+
   <!-- Ensure this library is referenced as a dependency -->
   <ItemGroup>
     <PackageReference Include="GitInfo" />
@@ -67,7 +77,7 @@
       </PackageDescription>
       <PackageId>MonoTorrent_LatestFromOrigin</PackageId>
       <PackageLicenseFile>LICENSE</PackageLicenseFile>
-      <PackageProjectUrl>https://github.com/alanmcgovern/monotorrent</PackageProjectUrl>
+      <PackageProjectUrl>https://github.com/uponatime2019/monotorrent</PackageProjectUrl>
       <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
       <PackageVersion>$(MonoTorrentFileVersion)$(MonoTorrentReleaseSuffix)</PackageVersion>
       <PackageTags>bittorrent;torrent;library;tracker;dht;c#;csharp;dotnet;.NET;p2p</PackageTags>
@@ -79,7 +89,7 @@
       <RepositoryType>git</RepositoryType>
       <RepositoryBranch>$(GitBranch)</RepositoryBranch>
       <RepositoryCommit>$(GitSha)</RepositoryCommit>
-      <RepositoryUrl>https://github.com/alanmcgovern/monotorrent</RepositoryUrl>
+      <RepositoryUrl>https://github.com/uponatime2019/monotorrent</RepositoryUrl>
 
       <Copyright>Alan McGovern, Gregor Burger</Copyright>
     </PropertyGroup>

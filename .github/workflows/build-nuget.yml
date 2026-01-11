@@ -31,6 +31,19 @@ jobs:
           $version = $version.Trim()
           echo "version=$version" >> $env:GITHUB_OUTPUT
 
+      - name: Upload to NuGet
+        run: |
+          $nupkg = Get-ChildItem -Recurse -Filter "MonoTorrent_LatestFromOrigin.*.nupkg" | Select-Object -First 1
+          if ($nupkg) {
+            dotnet nuget push $nupkg.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+          } else {
+            Write-Error "MonoTorrent_LatestFromOrigin nupkg file not found"
+            exit 1
+          }
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
