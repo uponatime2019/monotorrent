@@ -65,7 +65,7 @@
         -Per torrent and global rate limiting
         -Individual file relocation
       </PackageDescription>
-      <PackageId>MonoTorrent</PackageId>
+      <PackageId>MonoTorrent_LatestFromOrigin</PackageId>
       <PackageLicenseFile>LICENSE</PackageLicenseFile>
       <PackageProjectUrl>https://github.com/alanmcgovern/monotorrent</PackageProjectUrl>
       <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
