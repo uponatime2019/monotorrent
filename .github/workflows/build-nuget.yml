@@ -33,7 +33,7 @@ jobs:
 
       - name: Upload to NuGet
         run: |
-          $nupkg = Get-ChildItem -Recurse -Filter "MonoTorrent_LatestFromOrigin.*.nupkg" | Select-Object -First 1
+          $nupkg = Get-ChildItem -Recurse -Filter "MonoTorrent_LatestFromOrigin.*.nupkg" | Where-Object { $_.Name -notlike "*.snupkg" } | Select-Object -First 1
           if ($nupkg) {
             dotnet nuget push $nupkg.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
           } else {
